@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -43,16 +44,49 @@ func generatePoints(s string) ([]Point, error) {
 	return points, nil
 }
 
+func getDeterminant(points []Point) float64 {
+	determinant := 0.0
+	diagonal1 := points[len(points)-1].X * points[0].Y
+	diagonal2 := points[len(points)-1].Y * points[0].X
+
+	for i := 0; i < len(points)-1; i++ {
+		diagonal1 += points[i].X * points[i+1].Y
+		diagonal2 += points[i].Y * points[i+1].X
+	}
+
+	determinant = math.Abs(diagonal1 - diagonal2)
+
+	return determinant
+}
+
+func getDistance(pointA Point, pointB Point) float64 {
+	distance := 0.0
+	squareX := math.Pow(pointA.X-pointB.X, 2)
+	squareY := math.Pow(pointA.Y-pointB.Y, 2)
+	distance = math.Sqrt(squareX + squareY)
+
+	return distance
+}
+
 // getArea gets the area inside from a given shape
 func getArea(points []Point) float64 {
-	// Your code goes here
-	return 0.0
+	determinant := 0.0
+	area := 0.0
+	determinant = getDeterminant(points)
+	area = determinant / 2
+
+	return area
 }
 
 // getPerimeter gets the perimeter from a given array of connected points
 func getPerimeter(points []Point) float64 {
-	// Your code goes here
-	return 0.0
+	Perimeter := 0.0
+	for i := 0; i < len(points)-1; i++ {
+		Perimeter += getDistance(points[i], points[i+1])
+
+	}
+	Perimeter += getDistance(points[len(points)-1], points[0])
+	return Perimeter
 }
 
 // handler handles the web request and reponds it
@@ -79,11 +113,16 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Received vertices array: %v", vertices)
 
 	// Response construction
-	response := fmt.Sprintf("Welcome to the Remote Shapes Analyzer\n")
+	response := fmt.Sprintf("Welcome amigo to the Remote Shapes Analyzer\n")
 	response += fmt.Sprintf(" - Your figure has : [%v] vertices\n", len(vertices))
-	response += fmt.Sprintf(" - Vertices        : %v\n", vertices)
-	response += fmt.Sprintf(" - Perimeter       : %v\n", perimeter)
-	response += fmt.Sprintf(" - Area            : %v\n", area)
+	if len(vertices) < 3 {
+		response += fmt.Sprintf("The input doesnt create a valid figure\n")
+	}
+	if len(vertices) > 2 {
+		response += fmt.Sprintf(" - Vertices        : %v\n", vertices)
+		response += fmt.Sprintf(" - Perimeter       : %v\n", perimeter)
+		response += fmt.Sprintf(" - Area            : %v\n", area)
+	}
 
 	// Send response to client
 	fmt.Fprintf(w, response)
